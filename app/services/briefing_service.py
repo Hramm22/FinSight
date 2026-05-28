@@ -1,5 +1,6 @@
 from app.collectors.market_collector import get_watchlist_summaries
 from app.collectors.news_collector import get_all_news
+from app.agents.summary_agent import create_summary
 
 
 def create_briefing_data() -> dict:
@@ -20,6 +21,7 @@ def format_briefing_data(briefing_data: dict) -> str:
     output.append("=" * 60)
 
     output.append("\n[시장 데이터]")
+
     for stock in briefing_data["market_data"]:
         output.append(
             f"- {stock['name']}({stock['ticker']}): "
@@ -30,9 +32,11 @@ def format_briefing_data(briefing_data: dict) -> str:
         )
 
     output.append("\n[뉴스 데이터]")
+
     for news in briefing_data["news_data"]:
         output.append(
-            f"- [{news['source']}] {news['title']}\n  {news['link']}"
+            f"- [{news['source']}] {news['title']}\n"
+            f"  {news['link']}"
         )
 
     return "\n".join(output)
@@ -40,4 +44,13 @@ def format_briefing_data(briefing_data: dict) -> str:
 
 if __name__ == "__main__":
     briefing_data = create_briefing_data()
+
     print(format_briefing_data(briefing_data))
+
+    print("\n" + "=" * 60)
+    print("AI 시장 브리핑")
+    print("=" * 60)
+
+    ai_summary = create_summary(briefing_data)
+
+    print(ai_summary)
