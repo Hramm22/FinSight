@@ -11,26 +11,27 @@ def create_prompt(briefing_data: dict) -> str:
 
     market_text = "\n".join(
         [
-            f"{stock['name']} - "
-            f"1개월 수익률: {stock['month_return']}%, "
-            f"3개월 수익률: {stock['three_month_return']}%, "
-            f"1년 수익률: {stock['year_return']}%"
+            f"- {stock['name']}({stock['ticker']}): "
+            f"현재가 {stock['current_price']:,}원, "
+            f"1개월 {stock['month_return']}%, "
+            f"3개월 {stock['three_month_return']}%, "
+            f"1년 {stock['year_return']}%"
             for stock in market_data
         ]
     )
 
     news_text = "\n".join(
         [
-            f"- {news['title']}"
-            for news in news_data[:5]
+            f"- [{news['source']}] {news['title']}"
+            for news in news_data[:7]
         ]
     )
 
-    prompt = f"""
-당신은 금융 시장 분석 AI입니다.
+    return f"""
+당신은 한국 주식시장 브리핑을 작성하는 AI 애널리스트입니다.
 
-다음 시장 데이터와 경제 뉴스를 기반으로
-오늘의 시장 브리핑을 한국어로 작성하세요.
+아래 시장 데이터와 뉴스 제목만 근거로 사용하세요.
+없는 사실을 추측하거나 만들어내지 마세요.
 
 [시장 데이터]
 {market_text}
@@ -38,16 +39,34 @@ def create_prompt(briefing_data: dict) -> str:
 [경제/산업 뉴스]
 {news_text}
 
-요구사항:
-1. 자연스럽고 전문적인 한국어 사용
-2. 핵심 시장 흐름 요약
-3. 강세/약세 종목 언급
-4. 뉴스와 시장 흐름 연결
-5. 5~8문장 정도로 작성
-6. 마지막에 투자 유의 문구 추가
-"""
+작성 규칙:
+1. 한국어로 작성하세요.
+2. 5~7문장으로 짧고 명확하게 작성하세요.
+3. 강세 종목과 약세 종목을 각각 언급하세요.
+4. 뉴스와 시장 데이터를 억지로 연결하지 마세요.
+5. 투자 권유 표현을 사용하지 마세요.
+6. "매수", "무조건 상승", "확실한 호재" 같은 표현을 금지합니다.
+7. 마지막 문장은 반드시 아래 문구로 끝내세요:
+"본 브리핑은 투자 참고용 정보이며, 최종 투자 판단은 사용자에게 있습니다."
 
-    return prompt.strip()
+출력 형식:
+[FinSight AI 시장 브리핑]
+
+시장 요약:
+...
+
+강세 흐름:
+...
+
+약세/주의 흐름:
+...
+
+주요 뉴스:
+...
+
+투자 유의:
+본 브리핑은 투자 참고용 정보이며, 최종 투자 판단은 사용자에게 있습니다.
+""".strip()
 
 
 def create_summary(briefing_data: dict) -> str:
@@ -60,8 +79,10 @@ def create_summary(briefing_data: dict) -> str:
             "prompt": prompt,
             "stream": False,
         },
+        timeout=120,
     )
 
+    response.raise_for_status()
     result = response.json()
 
     return result["response"].strip()
