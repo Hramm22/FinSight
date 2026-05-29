@@ -1,9 +1,7 @@
 from app.collectors.market_collector import get_watchlist_summaries
 from app.collectors.news_collector import get_all_news
 
-from app.agents.macro_agent import analyze_macro
-from app.agents.sector_agent import analyze_sector
-from app.agents.summary_agent import create_final_summary
+from app.graph.briefing_graph import briefing_graph
 
 
 def create_briefing_data() -> dict:
@@ -51,32 +49,18 @@ if __name__ == "__main__":
     print(format_briefing_data(briefing_data))
 
     print("\n" + "=" * 60)
-    print("Macro Agent 분석")
+    print("LangGraph 실행")
     print("=" * 60)
 
-    macro_analysis = analyze_macro(
-        briefing_data["news_data"]
+    result = briefing_graph.invoke(
+        {
+            "news_data": briefing_data["news_data"],
+            "market_data": briefing_data["market_data"],
+        }
     )
-
-    print(macro_analysis)
-
-    print("\n" + "=" * 60)
-    print("Sector Agent 분석")
-    print("=" * 60)
-
-    sector_analysis = analyze_sector(
-        briefing_data["market_data"]
-    )
-
-    print(sector_analysis)
 
     print("\n" + "=" * 60)
     print("AI 시장 브리핑")
     print("=" * 60)
 
-    ai_summary = create_final_summary(
-        macro_analysis,
-        sector_analysis,
-    )
-
-    print(ai_summary)
+    print(result["final_summary"])
