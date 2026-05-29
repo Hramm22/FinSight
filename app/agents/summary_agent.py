@@ -1,32 +1,67 @@
-def create_summary(briefing_data: dict) -> str:
+import requests
+
+
+OLLAMA_URL = "http://localhost:11434/api/generate"
+MODEL_NAME = "qwen2.5:3b"
+
+
+def create_prompt(briefing_data: dict) -> str:
     market_data = briefing_data["market_data"]
     news_data = briefing_data["news_data"]
 
-    strongest_stock = max(market_data, key=lambda stock: stock["month_return"])
-    weakest_stock = min(market_data, key=lambda stock: stock["month_return"])
+    market_text = "\n".join(
+        [
+            f"{stock['name']} - "
+            f"1개월 수익률: {stock['month_return']}%, "
+            f"3개월 수익률: {stock['three_month_return']}%, "
+            f"1년 수익률: {stock['year_return']}%"
+            for stock in market_data
+        ]
+    )
 
-    recent_news_titles = [news["title"] for news in news_data[:5]]
+    news_text = "\n".join(
+        [
+            f"- {news['title']}"
+            for news in news_data[:5]
+        ]
+    )
 
-    summary = f"""
-[FinSight AI 시장 브리핑]
+    prompt = f"""
+당신은 금융 시장 분석 AI입니다.
 
-최근 1개월 기준 가장 강한 흐름을 보인 종목은 {strongest_stock['name']}입니다.
-{strongest_stock['name']}의 최근 1개월 수익률은 {strongest_stock['month_return']}%입니다.
+다음 시장 데이터와 경제 뉴스를 기반으로
+오늘의 시장 브리핑을 한국어로 작성하세요.
 
-반면 최근 1개월 기준 가장 약한 흐름을 보인 종목은 {weakest_stock['name']}입니다.
-{weakest_stock['name']}의 최근 1개월 수익률은 {weakest_stock['month_return']}%입니다.
+[시장 데이터]
+{market_text}
 
-오늘 수집된 주요 경제/산업 뉴스는 다음과 같습니다.
+[경제/산업 뉴스]
+{news_text}
 
-- {recent_news_titles[0]}
-- {recent_news_titles[1]}
-- {recent_news_titles[2]}
+요구사항:
+1. 자연스럽고 전문적인 한국어 사용
+2. 핵심 시장 흐름 요약
+3. 강세/약세 종목 언급
+4. 뉴스와 시장 흐름 연결
+5. 5~8문장 정도로 작성
+6. 마지막에 투자 유의 문구 추가
+"""
 
-현재 시장 데이터와 뉴스 흐름을 종합하면,
-강한 상승 흐름을 보이는 종목과 단기 약세 종목이 뚜렷하게 나뉘고 있어
-사용자는 뉴스 이슈와 최근 수익률 흐름을 함께 참고할 필요가 있습니다.
+    return prompt.strip()
 
-※ 본 브리핑은 투자 참고용 정보이며, 최종 투자 판단은 사용자에게 있습니다.
-""".strip()
 
-    return summary
+def create_summary(briefing_data: dict) -> str:
+    prompt = create_prompt(briefing_data)
+
+    response = requests.post(
+        OLLAMA_URL,
+        json={
+            "model": MODEL_NAME,
+            "prompt": prompt,
+            "stream": False,
+        },
+    )
+
+    result = response.json()
+
+    return result["response"].strip()
