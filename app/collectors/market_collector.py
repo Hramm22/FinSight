@@ -14,35 +14,43 @@ WATCHLIST = {
 
 def get_stock_summary(ticker: str) -> dict:
     today = datetime.today()
-    yesterday = today - timedelta(days=1)
 
+    recent_start = today - timedelta(days=10)
     one_month_ago = today - timedelta(days=30)
     three_months_ago = today - timedelta(days=90)
     one_year_ago = today - timedelta(days=365)
 
     current_data = stock.get_market_ohlcv_by_date(
-        yesterday.strftime("%Y%m%d"),
-        yesterday.strftime("%Y%m%d"),
+        recent_start.strftime("%Y%m%d"),
+        today.strftime("%Y%m%d"),
         ticker,
     )
 
     month_data = stock.get_market_ohlcv_by_date(
         one_month_ago.strftime("%Y%m%d"),
-        yesterday.strftime("%Y%m%d"),
+        today.strftime("%Y%m%d"),
         ticker,
     )
 
     three_month_data = stock.get_market_ohlcv_by_date(
         three_months_ago.strftime("%Y%m%d"),
-        yesterday.strftime("%Y%m%d"),
+        today.strftime("%Y%m%d"),
         ticker,
     )
 
     year_data = stock.get_market_ohlcv_by_date(
         one_year_ago.strftime("%Y%m%d"),
-        yesterday.strftime("%Y%m%d"),
+        today.strftime("%Y%m%d"),
         ticker,
     )
+
+    if current_data.empty:
+        raise ValueError(f"{ticker} 최근 거래 데이터를 가져오지 못했습니다.")
+
+    if month_data.empty or three_month_data.empty or year_data.empty:
+        raise ValueError(f"{ticker} 기간별 주가 데이터를 가져오지 못했습니다.")
+
+    current_price = current_data["종가"].iloc[-1]
 
     month_return = (
         (month_data["종가"].iloc[-1] / month_data["종가"].iloc[0]) - 1
@@ -59,7 +67,7 @@ def get_stock_summary(ticker: str) -> dict:
     return {
         "ticker": ticker,
         "name": stock.get_market_ticker_name(ticker),
-        "current_price": int(current_data["종가"].iloc[-1]),
+        "current_price": int(current_price),
         "month_return": float(round(month_return, 2)),
         "three_month_return": float(round(three_month_return, 2)),
         "year_return": float(round(year_return, 2)),
