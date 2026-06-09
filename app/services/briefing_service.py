@@ -5,6 +5,7 @@ from app.collectors.news_collector import get_all_news
 from app.db.database import Base, SessionLocal, engine
 from app.db.models import Briefing
 from app.graph.briefing_graph import briefing_graph
+from app.services.email_service import send_briefing_email
 
 
 Base.metadata.create_all(bind=engine)
@@ -48,16 +49,52 @@ def save_briefing(
     return briefing
 
 
-def format_briefing_data(briefing_data: dict) -> str:
+def build_email_body(
+    briefing_data: dict,
+    graph_result: dict,
+    saved_briefing: Briefing,
+) -> str:
+    return f"""
+[FinSight Daily Briefing]
+
+브리핑 ID: {saved_briefing.id}
+
+==============================
+AI 시장 브리핑
+==============================
+
+{graph_result["final_summary"]}
+
+==============================
+Macro Agent 분석
+==============================
+
+{graph_result["macro_analysis"]}
+
+==============================
+Sector Agent 분석
+==============================
+
+{graph_result["sector_analysis"]}
+
+==============================
+시장 데이터
+==============================
+
+{format_market_data(briefing_data["market_data"])}
+
+==============================
+주요 뉴스
+==============================
+
+{format_news_data(briefing_data["news_data"])}
+""".strip()
+
+
+def format_market_data(market_data: list[dict]) -> str:
     output = []
 
-    output.append("=" * 60)
-    output.append("FinSight 브리핑 데이터")
-    output.append("=" * 60)
-
-    output.append("\n[시장 데이터]")
-
-    for stock in briefing_data["market_data"]:
+    for stock in market_data:
         output.append(
             f"- {stock['name']}({stock['ticker']}): "
             f"현재가 {stock['current_price']:,}원 / "
@@ -66,13 +103,33 @@ def format_briefing_data(briefing_data: dict) -> str:
             f"1년 {stock['year_return']}%"
         )
 
-    output.append("\n[뉴스 데이터]")
+    return "\n".join(output)
 
-    for news in briefing_data["news_data"]:
+
+def format_news_data(news_data: list[dict]) -> str:
+    output = []
+
+    for news in news_data:
         output.append(
             f"- [{news['source']}] {news['title']}\n"
             f"  {news['link']}"
         )
+
+    return "\n".join(output)
+
+
+def format_briefing_data(briefing_data: dict) -> str:
+    output = []
+
+    output.append("=" * 60)
+    output.append("FinSight 브리핑 데이터")
+    output.append("=" * 60)
+
+    output.append("\n[시장 데이터]")
+    output.append(format_market_data(briefing_data["market_data"]))
+
+    output.append("\n[뉴스 데이터]")
+    output.append(format_news_data(briefing_data["news_data"]))
 
     return "\n".join(output)
 
@@ -98,6 +155,17 @@ if __name__ == "__main__":
         result,
     )
 
+    email_body = build_email_body(
+        briefing_data,
+        result,
+        saved_briefing,
+    )
+
+    send_briefing_email(
+        subject="FinSight Daily Briefing",
+        body=email_body,
+    )
+
     print("\n" + "=" * 60)
     print("AI 시장 브리핑")
     print("=" * 60)
@@ -108,3 +176,7 @@ if __name__ == "__main__":
     print("DB 저장 완료")
     print("=" * 60)
     print(f"저장된 브리핑 ID: {saved_briefing.id}")
+
+    print("\n" + "=" * 60)
+    print("이메일 발송 완료")
+    print("=" * 60)
