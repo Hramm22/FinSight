@@ -1,7 +1,13 @@
+import json
+
 from app.collectors.market_collector import get_watchlist_summaries
 from app.collectors.news_collector import get_all_news
-
+from app.db.database import Base, SessionLocal, engine
+from app.db.models import Briefing
 from app.graph.briefing_graph import briefing_graph
+
+
+Base.metadata.create_all(bind=engine)
 
 
 def create_briefing_data() -> dict:
@@ -12,6 +18,34 @@ def create_briefing_data() -> dict:
         "market_data": market_data,
         "news_data": news_data,
     }
+
+
+def save_briefing(
+    briefing_data: dict,
+    graph_result: dict,
+) -> Briefing:
+    db = SessionLocal()
+
+    briefing = Briefing(
+        market_data=json.dumps(
+            briefing_data["market_data"],
+            ensure_ascii=False,
+        ),
+        news_data=json.dumps(
+            briefing_data["news_data"],
+            ensure_ascii=False,
+        ),
+        macro_analysis=graph_result["macro_analysis"],
+        sector_analysis=graph_result["sector_analysis"],
+        ai_summary=graph_result["final_summary"],
+    )
+
+    db.add(briefing)
+    db.commit()
+    db.refresh(briefing)
+    db.close()
+
+    return briefing
 
 
 def format_briefing_data(briefing_data: dict) -> str:
@@ -59,8 +93,18 @@ if __name__ == "__main__":
         }
     )
 
+    saved_briefing = save_briefing(
+        briefing_data,
+        result,
+    )
+
     print("\n" + "=" * 60)
     print("AI 시장 브리핑")
     print("=" * 60)
 
     print(result["final_summary"])
+
+    print("\n" + "=" * 60)
+    print("DB 저장 완료")
+    print("=" * 60)
+    print(f"저장된 브리핑 ID: {saved_briefing.id}")
