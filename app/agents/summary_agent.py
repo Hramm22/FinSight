@@ -5,11 +5,15 @@ OLLAMA_URL = "http://localhost:11434/api/generate"
 MODEL_NAME = "qwen2.5:3b"
 
 
-def create_final_summary(macro_analysis: str, sector_analysis: str) -> str:
+def create_final_summary(
+    macro_analysis: str,
+    sector_analysis: str,
+    interest_analysis: str,
+) -> str:
     prompt = f"""
 당신은 금융 데이터를 요약하는 AI입니다.
 
-아래 두 분석 결과만 근거로 최종 브리핑을 작성하세요.
+아래 세 분석 결과만 근거로 최종 브리핑을 작성하세요.
 새로운 사실, 새로운 숫자, 새로운 종목을 만들지 마세요.
 
 [뉴스/거시 분석]
@@ -17,6 +21,9 @@ def create_final_summary(macro_analysis: str, sector_analysis: str) -> str:
 
 [시장 데이터 분석]
 {sector_analysis}
+
+[시장 관심도 분석]
+{interest_analysis}
 
 중요 규칙:
 - 반드시 한국어만 사용하세요.
@@ -28,6 +35,7 @@ def create_final_summary(macro_analysis: str, sector_analysis: str) -> str:
 - "때문에", "영향으로", "원인으로" 표현을 사용하지 마세요.
 - "추천", "매수", "매도", "유망", "확실한 호재", "무조건 상승" 표현을 사용하지 마세요.
 - 투자 권유를 하지 마세요.
+- 관심도 분석은 "시장 관심 종목" 관점으로만 활용하세요.
 
 출력 규칙:
 - 반드시 아래 5개 섹션을 모두 작성하세요.
@@ -41,7 +49,7 @@ def create_final_summary(macro_analysis: str, sector_analysis: str) -> str:
 [FinSight AI 시장 브리핑]
 
 시장 요약:
-뉴스/거시 분석과 시장 데이터 분석에서 확인되는 내용을 요약하세요.
+뉴스/거시 분석, 시장 데이터 분석, 시장 관심도 분석에서 확인되는 내용을 요약하세요.
 
 강세 흐름:
 강세 흐름이 관찰되는 종목과 수치를 요약하세요.
@@ -50,7 +58,7 @@ def create_final_summary(macro_analysis: str, sector_analysis: str) -> str:
 약세 또는 주의 흐름이 관찰되는 종목과 수치를 요약하세요.
 
 주요 분석:
-뉴스와 시장 데이터를 억지로 연결하지 말고, 각각 확인된 사실만 정리하세요.
+뉴스, 시장 데이터, 관심 종목 분석을 억지로 연결하지 말고 각각 확인된 사실만 정리하세요.
 
 투자 유의:
 본 브리핑은 투자 참고용 정보이며, 최종 투자 판단은 사용자에게 있습니다.
