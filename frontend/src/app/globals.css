@@ -1,0 +1,145 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f4f6f8;
+  --surface: #ffffff;
+  --surface-soft: #f8f9fb;
+  --surface-muted: #eef1f4;
+  --surface-dark: #101923;
+
+  --foreground: #111820;
+  --foreground-soft: #303b46;
+
+  --muted: #687482;
+  --muted-light: #98a1ab;
+
+  --line: #dde2e7;
+  --line-strong: #c9d0d7;
+
+  --primary: #183752;
+  --primary-hover: #214865;
+  --primary-soft: #e9f0f5;
+
+  --positive: #13735a;
+  --positive-soft: #e8f4ef;
+
+  --negative: #ad4350;
+  --negative-soft: #f8eaec;
+
+  --warning: #8a6b24;
+  --warning-soft: #f6f0df;
+
+  --neutral: #52616f;
+  --neutral-soft: #edf1f4;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background: var(--background);
+  color: var(--foreground);
+  font-family:
+    Arial,
+    "Pretendard",
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+button,
+a {
+  font: inherit;
+}
+
+button {
+  border: 0;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+::selection {
+  background: var(--primary);
+  color: #ffffff;
+}
+
+.fin-container {
+  width: min(calc(100% - 48px), 1360px);
+  margin-inline: auto;
+}
+
+.fin-card {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  box-shadow: 0 8px 28px rgba(16, 25, 35, 0.035);
+}
+
+.fin-label {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+.fin-tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+.fin-enter {
+  animation: finEnter 550ms ease both;
+}
+
+.fin-enter-delay {
+  animation: finEnter 680ms 80ms ease both;
+}
+
+.fin-interactive {
+  transition:
+    background-color 180ms ease,
+    border-color 180ms ease,
+    color 180ms ease,
+    transform 180ms ease;
+}
+
+.fin-interactive:hover {
+  transform: translateY(-1px);
+}
+
+.fin-grid-line {
+  background-image:
+    linear-gradient(to right, rgba(17, 24, 32, 0.035) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(17, 24, 32, 0.035) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+@keyframes finEnter {
+  from {
+    opacity: 0;
+    transform: translateY(7px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 760px) {
+  .fin-container {
+    width: min(calc(100% - 28px), 1360px);
+  }
+}

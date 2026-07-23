@@ -16,4 +16,5 @@ class Briefing(Base):
 
     macro_analysis = Column(Text, nullable=False)
     sector_analysis = Column(Text, nullable=False)
+    interest_analysis = Column(Text, nullable=False)
     ai_summary = Column(Text, nullable=False)

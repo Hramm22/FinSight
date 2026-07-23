@@ -16,24 +16,24 @@ MARKETS = {
     1: "KOSDAQ",
 }
 
-WATCHLIST_NAMES = [
-    "삼성전자",
-    "SK하이닉스",
-    "NAVER",
-    "카카오",
-    "현대차",
-    "기아",
-    "LG전자",
-    "LG에너지솔루션",
-    "삼성SDI",
-    "삼성바이오로직스",
-    "셀트리온",
-    "두산에너빌리티",
-    "한화에어로스페이스",
-    "한국항공우주",
-    "HD현대중공업",
-    "POSCO홀딩스",
-]
+STOCK_ALIASES = {
+    "삼성전자": ["삼성전자", "삼전"],
+    "SK하이닉스": ["SK하이닉스", "하이닉스", "닉스"],
+    "NAVER": ["NAVER", "네이버"],
+    "카카오": ["카카오"],
+    "현대차": ["현대차", "현대자동차"],
+    "기아": ["기아"],
+    "LG전자": ["LG전자"],
+    "LG에너지솔루션": ["LG에너지솔루션", "LG엔솔"],
+    "삼성SDI": ["삼성SDI"],
+    "삼성바이오로직스": ["삼성바이오로직스", "삼바"],
+    "셀트리온": ["셀트리온"],
+    "두산에너빌리티": ["두산에너빌리티"],
+    "한화에어로스페이스": ["한화에어로스페이스", "한화에어로"],
+    "한국항공우주": ["한국항공우주", "KAI"],
+    "HD현대중공업": ["HD현대중공업", "현대중공업"],
+    "POSCO홀딩스": ["POSCO홀딩스", "포스코홀딩스", "포스코"],
+}
 
 EXCLUDE_KEYWORDS = [
     "ETF",
@@ -180,19 +180,21 @@ def get_top_by_rising_rate(
 
 def count_news_mentions(
     news_data: list[dict],
-    stock_names: list[str],
+    stock_aliases: dict[str, list[str]],
 ) -> dict:
     mention_counts = {
         stock_name: 0
-        for stock_name in stock_names
+        for stock_name in stock_aliases.keys()
     }
 
     for news in news_data:
         title = news["title"]
 
-        for stock_name in stock_names:
-            if stock_name in title:
-                mention_counts[stock_name] += 1
+        for stock_name, aliases in stock_aliases.items():
+            for alias in aliases:
+                if alias in title:
+                    mention_counts[stock_name] += 1
+                    break
 
     return mention_counts
 
@@ -214,19 +216,15 @@ def get_market_interest_candidates(
 
     rising_stocks = get_top_by_rising_rate(limit=30)
 
-    stock_names = list(
-        set(
-            WATCHLIST_NAMES
-            + [
-                stock["name"]
-                for stock in rising_stocks
-            ]
-        )
-    )
+    stock_aliases = STOCK_ALIASES.copy()
+
+    for stock in rising_stocks:
+        if stock["name"] not in stock_aliases:
+            stock_aliases[stock["name"]] = [stock["name"]]
 
     mention_counts = count_news_mentions(
         news_data,
-        stock_names,
+        stock_aliases,
     )
 
     candidates = []

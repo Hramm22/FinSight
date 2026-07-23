@@ -1,6 +1,7 @@
 import json
 
 from app.collectors.market_collector import get_watchlist_summaries
+from app.collectors.market_interest_collector import get_market_interest_candidates
 from app.collectors.news_collector import get_all_news
 from app.db.database import Base, SessionLocal, engine
 from app.db.models import Briefing
@@ -11,9 +12,44 @@ from app.services.email_service import send_briefing_email
 Base.metadata.create_all(bind=engine)
 
 
+def build_extra_tickers_from_interest_candidates(
+    candidates: list[dict],
+    limit: int = 5,
+) -> dict[str, str]:
+    extra_tickers = {}
+
+    for candidate in candidates:
+        ticker = candidate.get("ticker")
+        name = candidate.get("name")
+
+        if ticker is None or name is None:
+            continue
+
+        extra_tickers[ticker] = name
+
+        if len(extra_tickers) >= limit:
+            break
+
+    return extra_tickers
+
+
 def create_briefing_data() -> dict:
-    market_data = get_watchlist_summaries()
     news_data = get_all_news()
+
+    interest_candidates = get_market_interest_candidates(
+        news_data=news_data,
+    )
+
+    extra_tickers = build_extra_tickers_from_interest_candidates(
+        interest_candidates,
+        limit=5,
+    )
+
+    market_data = get_watchlist_summaries(
+        news_data=news_data,
+        extra_tickers=extra_tickers,
+        max_count=15,
+    )
 
     return {
         "market_data": market_data,
@@ -38,6 +74,7 @@ def save_briefing(
         ),
         macro_analysis=graph_result["macro_analysis"],
         sector_analysis=graph_result["sector_analysis"],
+        interest_analysis=graph_result["interest_analysis"],
         ai_summary=graph_result["final_summary"],
     )
 
@@ -47,48 +84,6 @@ def save_briefing(
     db.close()
 
     return briefing
-
-
-def build_email_body(
-    briefing_data: dict,
-    graph_result: dict,
-    saved_briefing: Briefing,
-) -> str:
-    return f"""
-[FinSight Daily Briefing]
-
-브리핑 ID: {saved_briefing.id}
-
-==============================
-AI 시장 브리핑
-==============================
-
-{graph_result["final_summary"]}
-
-==============================
-Macro Agent 분석
-==============================
-
-{graph_result["macro_analysis"]}
-
-==============================
-Sector Agent 분석
-==============================
-
-{graph_result["sector_analysis"]}
-
-==============================
-시장 데이터
-==============================
-
-{format_market_data(briefing_data["market_data"])}
-
-==============================
-주요 뉴스
-==============================
-
-{format_news_data(briefing_data["news_data"])}
-""".strip()
 
 
 def format_market_data(market_data: list[dict]) -> str:
@@ -134,6 +129,54 @@ def format_briefing_data(briefing_data: dict) -> str:
     return "\n".join(output)
 
 
+def build_email_body(
+    briefing_data: dict,
+    graph_result: dict,
+    saved_briefing: Briefing,
+) -> str:
+    return f"""
+[FinSight Daily Briefing]
+
+브리핑 ID: {saved_briefing.id}
+
+==============================
+AI 시장 브리핑
+==============================
+
+{graph_result["final_summary"]}
+
+==============================
+Macro Agent 분석
+==============================
+
+{graph_result["macro_analysis"]}
+
+==============================
+Sector Agent 분석
+==============================
+
+{graph_result["sector_analysis"]}
+
+==============================
+Interest Agent 분석
+==============================
+
+{graph_result["interest_analysis"]}
+
+==============================
+시장 데이터
+==============================
+
+{format_market_data(briefing_data["market_data"])}
+
+==============================
+주요 뉴스
+==============================
+
+{format_news_data(briefing_data["news_data"])}
+""".strip()
+
+
 if __name__ == "__main__":
     briefing_data = create_briefing_data()
 
@@ -149,6 +192,21 @@ if __name__ == "__main__":
             "market_data": briefing_data["market_data"],
         }
     )
+
+    print("\n" + "=" * 60)
+    print("Macro Agent 결과")
+    print("=" * 60)
+    print(result["macro_analysis"])
+
+    print("\n" + "=" * 60)
+    print("Sector Agent 결과")
+    print("=" * 60)
+    print(result["sector_analysis"])
+
+    print("\n" + "=" * 60)
+    print("Interest Agent 결과")
+    print("=" * 60)
+    print(result["interest_analysis"])
 
     saved_briefing = save_briefing(
         briefing_data,
@@ -169,7 +227,6 @@ if __name__ == "__main__":
     print("\n" + "=" * 60)
     print("AI 시장 브리핑")
     print("=" * 60)
-
     print(result["final_summary"])
 
     print("\n" + "=" * 60)
