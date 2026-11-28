@@ -54,6 +54,56 @@ class FormatterV2Tests(unittest.TestCase):
         self.assertNotIn("routing_log", result)
         self.assertNotIn("agent_attempts", result)
 
+    def test_macro_accepts_emoji_headers(self):
+        text = (
+            "1️⃣ 시장 흐름: 증시 관련 이슈\n"
+            "2️⃣ 시장 흐름: 금리 관련 이슈\n"
+            "3️⃣ 시장 흐름: 환율 관련 이슈"
+        )
+        self.assertEqual(
+            format_macro_compact(text),
+            "1. 증시 관련 이슈\n2. 금리 관련 이슈\n3. 환율 관련 이슈",
+        )
+        self.assertEqual(
+            format_macro_compact("1\u20e3 시장 흐름: 증시 관련 이슈"),
+            "1. 증시 관련 이슈",
+        )
+
+    def test_macro_ignores_evidence_news(self):
+        text = (
+            "1️⃣ 시장 흐름: 증시 관련 이슈\n"
+            "근거 뉴스:\n"
+            "- 오늘의 시장 흐름: 반도체 투자 확대\n"
+            "- 시장 흐름: 금리 인상\n"
+            "- 2️⃣ 시장 흐름: 환율 상승"
+        )
+        self.assertEqual(format_macro_compact(text), "1. 증시 관련 이슈")
+        briefing = format_final_briefing(text, "", "", "요약")
+        self.assertNotIn("반도체 투자 확대", briefing)
+        self.assertNotIn("금리 인상", briefing)
+        self.assertNotIn("환율 상승", briefing)
+
+    def test_macro_ignores_description_lines(self):
+        text = (
+            "시장 흐름: 금리 관련 이슈\n"
+            "확인 내용: 시장 흐름: 환율 변동\n"
+            "오늘의 시장 흐름: 주가 상승"
+        )
+        self.assertEqual(format_macro_compact(text), "1. 금리 관련 이슈")
+
+    def test_macro_rejects_empty_flow(self):
+        for text in (
+            "시장 흐름:",
+            "시장 흐름:   ",
+            "1️⃣ 시장 흐름:",
+            "2️⃣ 시장 흐름:   ",
+        ):
+            with self.subTest(text=text):
+                self.assertEqual(
+                    format_macro_compact(text),
+                    "확인된 주요 시장 흐름이 없습니다.",
+                )
+
 
 if __name__ == "__main__":
     unittest.main()
